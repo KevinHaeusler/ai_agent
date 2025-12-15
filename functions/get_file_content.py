@@ -1,5 +1,6 @@
 import os
 from google.genai import types
+
 MAX_CHARS = 10000
 
 
@@ -29,6 +30,7 @@ def get_file_content(working_directory, file_path):
 
     except Exception as e:
         return f"Error: {e}"
+
 
 schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",

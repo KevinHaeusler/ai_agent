@@ -4,10 +4,7 @@ from google import genai
 import argparse
 from google.genai import types
 from prompts import system_prompt
-from functions.get_files_info import schema_get_files_info
-from functions.get_files_content import schema_get_file_content
-from functions.write_file import schema_write_file
-from functions.run_python_file import schema_run_python_file
+from call_function import call_function, available_functions
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -19,9 +16,6 @@ parser.add_argument("--verbose", action="store_true", help="Enable verbose outpu
 args = parser.parse_args()
 messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
 
-available_functions = types.Tool(
-    function_declarations=[schema_get_files_info,schema_get_file_content, schema_write_file, schema_run_python_file],
-)
 
 
 response = client.models.generate_content(
@@ -37,8 +31,30 @@ if args.verbose:
     print(
         f"User prompt: {args.user_prompt}\nPrompt tokens: {response.usage_metadata.prompt_token_count}\nResponse tokens: {response.usage_metadata.candidates_token_count}"
     )
+tool_results = []
+
 if response.function_calls:
     for function_call_part in response.function_calls:
-        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+        # actually call the function
+        function_call_result = call_function(
+            function_call_part,
+            verbose=args.verbose,
+        )
+
+        # sanity check: make sure we got a function_response back
+        if (
+            not function_call_result.parts
+            or not function_call_result.parts[0].function_response
+            or function_call_result.parts[0].function_response.response is None
+        ):
+            raise RuntimeError("Function call did not return a valid function_response")
+
+        # store the tool result (we’ll use these later)
+        tool_results.append(function_call_result.parts[0])
+
+        # if verbose, show the result dict
+        if args.verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
 else:
     print(response.text)
+

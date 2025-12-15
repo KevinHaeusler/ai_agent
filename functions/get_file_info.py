@@ -2,9 +2,7 @@ import os
 from google.genai import types
 
 
-
-
-def get_files_info(working_directory, directory="."):
+def get_file_info(working_directory, directory="."):
     working_dir_abs = os.path.abspath(working_directory)
     target_dir = os.path.normpath(os.path.join(working_dir_abs, directory))
     valid_target_dir = (
@@ -27,8 +25,9 @@ def get_files_info(working_directory, directory="."):
     except Exception as e:
         return f"Error: {e}"
 
+
 schema_get_files_info = types.FunctionDeclaration(
-    name="get_files_info",
+    name="get_file_info",
     description="Lists files in the specified directory along with their sizes, does not list the content, constrained to the working directory.",
     parameters=types.Schema(
         type=types.Type.OBJECT,
